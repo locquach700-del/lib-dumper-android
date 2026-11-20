@@ -379,7 +379,7 @@ public class MainActivity extends Activity {
         report.append("PID=").append(pid).append("\nOUT=").append(outDir.getAbsolutePath()).append("\n");
         int dumped = 0;
         for (String path : paths) {
-            String name name = path.substring(path.lastIndexOf('/') + 1);
+            String name = path.substring(path.lastIndexOf('/') + 1);
             File dest = new File(outDir, name);
             String cp = suOut("cp \"" + path + "\" \"" + dest.getAbsolutePath() + "\" 2>&1; echo EXIT:$?");
             if (cp.contains("EXIT:0") && destExists(dest.getAbsolutePath())) {
