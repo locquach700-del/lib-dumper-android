@@ -23,32 +23,40 @@ jobs:
           cd /tmp
           curl -sL -o cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q cmdtools.zip
+          rm -rf $HOME/android-sdk/cmdline-tools/latest
           mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
 
       - name: Accept licenses and install SDK packages
         run: |
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install Gradle and build
+      - name: Install Gradle 8.2
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gradle
-          gradle wrapper --gradle-version 8.2
-          chmod +x gradlew
+          cd /tmp
+          curl -sL -o gradle.zip https://services.gradle.org/distributions/gradle-8.2-bin.zip
+          unzip -q gradle.zip
+          echo "/tmp/gradle-8.2/bin" >> $GITHUB_PATH
+
+      - name: Build debug APK
+        run: |
           export ANDROID_HOME=$HOME/android-sdk
+          /tmp/gradle-8.2/bin/gradle wrapper --gradle-version 8.2
+          chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
       - name: List outputs
         if: always()
-        run: find app/build -name '*.apk' 2>/dev/null || ls -la app/build 2>/dev/null || true
+        run: find . -name '*.apk' 2>/dev/null | head -20
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: LibDumper-APK
-          path: app/build/outputs/apk/**/*.apk
+          path: |
+            app/build/outputs/apk/**/*.apk
           if-no-files-found: warn
