@@ -17,22 +17,34 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'tools platform-tools platforms;android-34 build-tools;34.0.0'
+      - name: Install Android commandline tools
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd /tmp
+          curl -sL -o cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdtools.zip
+          mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
-      - name: Install Gradle
+      - name: Accept licenses and install SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Install Gradle and build
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq gradle
-          gradle --version
-
-      - name: Gradle wrapper + build
-        run: |
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
+          export ANDROID_HOME=$HOME/android-sdk
           ./gradlew assembleDebug --stacktrace
+
+      - name: List outputs
+        if: always()
+        run: find app/build -name '*.apk' 2>/dev/null || ls -la app/build 2>/dev/null || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
